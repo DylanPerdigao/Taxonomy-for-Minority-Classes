@@ -20,7 +20,8 @@ class Taxonomy(object):
     """
     def __init__(self, K=5):
         self.K = K
-        self.counts = {'S': 0, 'B': 0, 'R': 0, 'O': 0}
+        self.tax_nums = np.array([0, 0, 0, 0])
+        self.tax_percentage = np.array([0, 0, 0, 0])
         self.labelled = None
         
     def fit(self, D, y):
@@ -46,7 +47,7 @@ class Taxonomy(object):
         # initialize counters
         S = B = R = O = 0
         # labelled target array
-        labelled = y.copy()
+        self.labelled = y.copy()
 
         # get the minority class
         minority_class = Counter(y).most_common()[-1][0]
@@ -73,10 +74,10 @@ class Taxonomy(object):
         for i, sum_neighbors in enumerate(count_minority_KNN):
             if sum_neighbors >= math.floor(0.8*self.K): 
                 S+=1
-                labelled[idx_minority[i]] = 1
+                self.labelled[idx_minority[i]] = 1
             elif sum_neighbors >= math.floor(0.5*self.K):
                 B+=1
-                labelled[idx_minority[i]] = 2
+                self.labelled[idx_minority[i]] = 2
             elif sum_neighbors >= math.floor(0.2*self.K):
                 # index of nearest neighbor of i
                 idx_NN = idx_KNN[is_KNN_minority[:,i],i]
@@ -84,13 +85,14 @@ class Taxonomy(object):
                 # True Rare Examples
                 if count_minority_KNN[i_NN] == 0 or (count_minority_KNN[i_NN] == 1 and idx_minority[i] in idx_KNN[:,i_NN]):
                     R+=1
-                    labelled[idx_minority[i]] = 3
+                    self.labelled[idx_minority[i]] = 3
                 # False Rare Examples => Borderline
                 else:
                     B+=1
-                    labelled[idx_minority[i]] = 2
+                    self.labelled[idx_minority[i]] = 2
             else:                               
                 O+=1
-                labelled[idx_minority[i]] = 4
-            SBRO = np.array([S, B, R, O])
-        return {'count' : SBRO, 'percentage' : SBRO/count_minority_class*100, 'target' : labelled}
+                self.labelled[idx_minority[i]] = 4
+            self.tax_nums = np.array([S, B, R, O])
+            self.tax_percentage = self.tax_nums/count_minority_class*100
+        return {'count' : self.tax_nums , 'percentage' : self.tax_percentage, 'target' : self.labelled}
